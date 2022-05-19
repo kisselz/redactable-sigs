@@ -7,7 +7,7 @@ and [Steinfeld, Bull, and Zheng](https://cpb-us-w2.wpmucdn.com/sites.uab.edu/dis
 The provided code implements all existing constructions as well as providing support for new constructions.
 
 A good survey of the work up to 2015 is [A General Framework for Redactable Signatures and New Constructions](https://eprint.iacr.org/2015/1059.pdf)
-by Derler, P&oum;hls, Samelin, and Slamanig
+by Derler, P&ouml;hls, Samelin, and Slamanig
 
 ***WARNING***: This code is only intended for experimental purposes. No warranty
 is stated nor implied about the fitness of this code for deployment.
