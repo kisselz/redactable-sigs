@@ -1,10 +1,10 @@
 Overview
 ========
 
-This project investigates methods for constructing Redactable Signature Schemes
-as first described by [Johsnson, Molnar, Song, and Wagner](https://people.eecs.berkeley.edu/~dawnsong/papers/homsig.pdf)
+This project iplements redactable signature schemes for sets. Redactable signature schemes were
+first described by [Johsnson, Molnar, Song, and Wagner](https://people.eecs.berkeley.edu/~dawnsong/papers/homsig.pdf)
 and [Steinfeld, Bull, and Zheng](https://cpb-us-w2.wpmucdn.com/sites.uab.edu/dist/a/68/files/2020/01/cesproc-icisc01-p285.pdf).
-The provided code implements all existing constructions as well as providing support for new constructions.
+The provided code implements the set constructions in the accompanying paper "Policy-Based Redactable Set Signatures".
 
 A good survey of the work up to 2015 is [A General Framework for Redactable Signatures and New Constructions](https://eprint.iacr.org/2015/1059.pdf)
 by Derler, P&ouml;hls, Samelin, and Slamanig
@@ -29,18 +29,8 @@ Build Dependencies
 
 Authors
 =======
-
-Faculty
--------
-
-* Zachary Kissel (PI): 8/2021 --
-
-Students
---------
-
-* Alexander Royer: 5/2022 --
+Zachary Kissel (PI): 8/2021 --
 
 Support
 =======
-Support for project provided through the Merrimack College Science and Engineering
-Dean's Office (5/2022 - 6/2022)
+Financial support provided through Merrimack College's sabbatical program.
