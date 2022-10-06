@@ -18,7 +18,7 @@
   <!-- Compile the Java code from ${src} into ${build} -->
   <target name="compile" depends="init"
         description="Compile source code">
-    <javac includeantruntime="false"
+    <javac debug="true" debuglevel="source,lines,vars" includeantruntime="false"
       srcdir="${src}" destdir="${build}">
        <compilerarg value="-Xlint:unchecked" />
     </javac>

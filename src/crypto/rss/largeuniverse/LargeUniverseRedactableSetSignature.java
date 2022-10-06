@@ -145,7 +145,6 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
   public SetSignature sign(Set<String> set, String policy)
     throws InvalidKeyException, SignatureException
   {
-    LargeUniverseSigningKey skey = (LargeUniverseSigningKey) sk;
     Accumulator accumulator = new Accumulator();
     HashMap<String, BigInteger> witnesses = new HashMap<>();
     BigInteger acc;
@@ -170,7 +169,7 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
       else
         accSet.add(ele + ":(0,0)");
     }
-    accumulator.initAccumulate(skey.getAccumulatorKey());
+    accumulator.initAccumulate(sk.getAccumulatorKey());
     Tuple<BigInteger,ArrayList<Pair<BigInteger>>> rv = accumulator.eval(accSet);
     acc = rv.getFirst();
 
@@ -179,7 +178,7 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
       witnesses.put(ele, accumulator.getWitness(ele, acc, rv.getSecond()));
 
     // Generate the signature on the accumulator value and secret.
-    signScheme.initSign(skey.getSignatureKey());
+    signScheme.initSign(sk.getSignatureKey());
     signScheme.update(acc.toByteArray());
     signScheme.update(secret.toByteArray());
     byte[] signature = signScheme.sign();
@@ -252,7 +251,6 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
     throws InvalidKeyException, SignatureException
   {
     LargeUniverseSetSignature theSig = (LargeUniverseSetSignature) sig;
-    LargeUniverseVerificationKey vkey = (LargeUniverseVerificationKey) vk;
     Accumulator accumulator = new Accumulator();
     String element;
     Policy pol;
@@ -262,7 +260,7 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
     HashMap<String,Pair<BigInteger>> shares = theSig.getShares();
 
     // Verify the set elements and shares are correct.
-    accumulator.initVerify(vkey.getAccumulatorKey());
+    accumulator.initVerify(vk.getAccumulatorKey());
     for (String ele : set)
     {
       // If the element is part of the policy
@@ -297,7 +295,7 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
     BigInteger secret = pol.reconstruct(shares);
 
     // Verify the signature on the shares.
-    signScheme.initVerify(vkey.getSignatureKey());
+    signScheme.initVerify(vk.getSignatureKey());
     signScheme.update(theSig.getAccumulator().toByteArray());
     signScheme.update(secret.toByteArray());
 

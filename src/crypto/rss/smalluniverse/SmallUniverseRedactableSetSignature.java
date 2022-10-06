@@ -26,7 +26,6 @@ import crypto.rss.VerificationKey;
 import crypto.rss.RedactableSetSignature;
 import crypto.accumulator.AccumulatorKeyPair;
 import crypto.accumulator.Accumulator;
-import policylang.Policy;
 
 import java.math.BigInteger;
 import java.util.Set;
@@ -120,7 +119,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
 
 
   /**
-   * Intializes the signature for signing.
+   * Initializes the signature for signing.
    * @param sk the signing key.
    */
    public void initSign(SigningKey sk)
@@ -151,7 +150,6 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
   public SetSignature sign(Set<String> set, String policy)
     throws InvalidKeyException, SignatureException
   {
-    SmallUniverseSigningKey skey = (SmallUniverseSigningKey) sk;
     Accumulator accumulator = new Accumulator();
     HashMap<String, BigInteger> witnesses = new HashMap<>();
     BigInteger acc;
@@ -163,7 +161,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     // Split the characteristic sequences appart.
     charSeq = policy.split(",");
 
-    String currCharSeq = computeCharSeq(set, skey.getUniverse());
+    String currCharSeq = computeCharSeq(set, sk.getUniverse());
     if (currCharSeq == null)
       throw new SignatureException("Set is not a subest of the universe.");
 
@@ -171,14 +169,15 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     // strings that satisfy the policy
     HashSet<String> accSet = new HashSet<>();
     for (int i = 0; i < charSeq.length; i++)
-      accSet.add(charSeq[i]);
-
+      accSet.add(charSeq[i].trim());
+      
+    
     // Since it is easier now, we use the accSet to check to see if
     // our set satisfies the policy.
     if (!accSet.contains(currCharSeq))
       throw new SignatureException("Set does not satisify policy.");
 
-    accumulator.initAccumulate(skey.getAccumulatorKey());
+    accumulator.initAccumulate(sk.getAccumulatorKey());
     Tuple<BigInteger,ArrayList<Pair<BigInteger>>> rv = accumulator.eval(accSet);
     acc = rv.getFirst();
 
@@ -187,7 +186,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
       witnesses.put(ele, accumulator.getWitness(ele, acc, rv.getSecond()));
 
     // Generate the signature on the accumulator value and secret.
-    signScheme.initSign(skey.getSignatureKey());
+    signScheme.initSign(sk.getSignatureKey());
     signScheme.update(acc.toByteArray());
     byte[] signature = signScheme.sign();
 
@@ -207,9 +206,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
       Set<String> subset, SetSignature sig, String policy)
   {
     SmallUniverseSetSignature theSig = (SmallUniverseSetSignature) sig;
-    SmallUniverseVerificationKey vkey = (SmallUniverseVerificationKey) vk;
     String currCharSeq;
-    String[] charSeq;
 
     // Parse the components of the signature.
     HashMap<String, BigInteger> witnesses = theSig.getWitnesses();
@@ -220,7 +217,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
 
     // Build the subset's characteristic sequence and
     // make sure we satisfy the policy.
-    currCharSeq = computeCharSeq(subset, vkey.getUniverse());
+    currCharSeq = computeCharSeq(subset, vk.getUniverse());
     if (currCharSeq == null)
       return null;
 
@@ -231,10 +228,13 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     // We no proceed to perform the redaction by removing the
     // witnesses that are no longer valid.
     Set<String> keys = witnesses.keySet();
+    HashSet<String> toRemove = new HashSet<>();
     for (String key : keys)
       if (!orCharSeq(currCharSeq, key).equals(currCharSeq))
-        witnesses.remove(key);
+        toRemove.add(key);
 
+    for (String key : toRemove)
+        witnesses.remove(key);
     return new SmallUniverseSetSignature(theSig.getAccumulator(), policy,
         theSig.getSignature(), witnesses);
   }
@@ -308,7 +308,14 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
         seq.set(universe.get(ele));
       }
 
-      return seq.toString();
+      // Build the string.
+      String rv = "";
+      for (int i = 0; i < universe.size(); i++)
+          if (seq.get(i))
+               rv += "1";
+          else
+              rv += 0;
+      return rv;
     }
 
     /**

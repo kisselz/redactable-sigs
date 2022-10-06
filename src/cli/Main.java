@@ -56,7 +56,7 @@ public class Main
    public static void displayUsage()
    {
      System.out.println("usage:");
-     System.out.println("  rss {--help | --test}");
+     System.out.println("  rss {--help | --test | --perf}");
      System.out.println("  rss --keygen {small universe_file | large}");
      System.out.println("  rss --sign {small | large} sign_key_file set_file policy");
      System.out.println("  rss --redact {small | large} ver_key_file set_file subset_file policy sig_file");
@@ -68,6 +68,7 @@ public class Main
      System.out.println("  -v, --verify\t\tVerifies a signature.");
      System.out.println("  -h, --help\t\tDisplays help message.");
      System.out.println("  -t, --test\t\tRuns sanity tests.");
+     System.out.println("  -p, --perf\t\tFor performance analyzer.");
      System.exit(1);
    }
 
@@ -453,7 +454,6 @@ public class Main
          System.exit(1);
        }
 
-
        // Load the set data.
        try
        {
@@ -522,6 +522,114 @@ public class Main
          System.exit(1);
        }
      }
+     
+   /**
+    * Runs the performance tests for data collection purposes.
+    * @param algo the algorithm to use for performance.
+    * @param args the array of arguments to the command.
+    */
+   public static void handlePerf(String algo, String[] args)
+   {
+       RedactableSetSignature rss = null;
+       HashMap<String, Integer> universe = null;
+       HashSet<String> set = new HashSet<String>();
+       HashSet<String> subset = new HashSet<String>();
+       SetSignature sig = null;
+       
+       // Make sure we have no arguments.
+       printArgCountError(args.length, 0);
+       
+       // Build up the set.
+       set.add("hello");
+       set.add("good");
+       set.add("fun");
+       set.add("dog");
+       set.add("cat");
+       
+       // Build up the subset.
+       subset.add("hello");
+       subset.add("good");
+       
+       if (algo.equals("large"))
+       {
+           // Generate the keys
+           rss = RedactableSetSignatureFactory.getRedactableSetSignature(
+          "large-universe");
+           SignatureKeyPair kp = rss.keyGen(universe);
+           
+           // Sign the set.
+           rss.initSign(kp.getSigningKey());
+           try
+           {
+            sig = rss.sign(set, 
+                   "(hello and good) or (fun and dog and cat)");
+           } 
+           catch(InvalidKeyException | SignatureException ex)
+           {
+               System.out.println(ex);
+           }
+           
+           // Redact to subset.
+           rss.initRedactVerify(kp.getVerificationKey());
+           sig = rss.redact(set, subset, sig, "hello and good");
+           
+           // Verify the signature on the subset.
+           try
+           {
+            rss.vrfy(sig, subset);
+           }
+           catch (InvalidKeyException | SignatureException ex)
+           {
+               System.out.println(ex);
+           }
+       }
+       else if (algo.equals("small"))
+       {
+           // Initialize the universe.
+           universe = new HashMap<>();
+           
+           universe.put("hello", 0);
+           universe.put("good", 1);
+           universe.put("fun", 2);
+           universe.put("dog", 3);
+           universe.put("cat", 4);
+           
+          // Generate the keys
+          rss = RedactableSetSignatureFactory.getRedactableSetSignature(
+          "small-universe");
+          SignatureKeyPair kp = rss.keyGen(universe);
+           
+           // Sign the set.
+           rss.initSign(kp.getSigningKey());
+           try
+           {
+            sig = rss.sign(set, "11111, 11000, 00111");
+           } 
+           catch(InvalidKeyException | SignatureException ex)
+           {
+               System.out.println(ex);
+           }
+           
+           // Redact to subset.
+           rss.initRedactVerify(kp.getVerificationKey());
+           sig = rss.redact(set, subset, sig, "11000");
+           
+           // Verify the signature on the subset.
+           try
+           {
+            rss.vrfy(sig, subset);
+           }
+           catch (InvalidKeyException | SignatureException ex)
+           {
+               System.out.println(ex);
+           }
+       }
+       else
+       {
+           System.out.println("unknown algorithm " + algo);
+           displayUsage();
+       }
+   }
 
    /**
     * Processes the command line arguemnts.
@@ -530,12 +638,11 @@ public class Main
    public static void processCommand(String[] args)
    {
      OptionParser optParser = new OptionParser(args);
-     LongOption[] lopt = new LongOption[6];
+     LongOption[] lopt = new LongOption[7];
      Tuple<Character, String> currOpt;
-     boolean done = false;
 
      // Set the short option names.
-     optParser.setOptString("htg:s:r:v:");
+     optParser.setOptString("p:htg:s:r:v:");
 
      // Set the long option names.
      lopt[0] = new LongOption("sign", true, 's');
@@ -544,6 +651,7 @@ public class Main
      lopt[3] = new LongOption("keygen", true, 'g');
      lopt[4] = new LongOption("test", false, 't');
      lopt[5] = new LongOption("help", false, 'h');
+     lopt[6] = new LongOption("perf", true, 'p');
 
      optParser.setLongOpts(lopt);
 
@@ -576,6 +684,10 @@ public class Main
        case 'h':  // Display help.
         printArgCountError(optParser.getNonOpts().length, 0);
         displayUsage();
+       break;
+       
+       case 'p': // For performance analyzer.
+         handlePerf(currOpt.getSecond(), optParser.getNonOpts());
        break;
 
        default:
