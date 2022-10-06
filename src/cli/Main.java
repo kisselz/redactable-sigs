@@ -28,6 +28,7 @@ import crypto.rss.RedactableSetSignatureKeyFactory;
 import crypto.rss.SetSignature;
 import crypto.rss.largeuniverse.LargeUniverseSetSignature;
 import crypto.rss.smalluniverse.SmallUniverseSetSignature;
+import crypto.rss.derler.DerlerSetSignature;
 import util.LongOption;
 import util.OptionParser;
 import util.exception.BadFileFormatException;
@@ -58,10 +59,12 @@ public class Main
      System.out.println("usage:");
      System.out.println("  rss {--help | --test }");
      System.out.println("  rss --perf {small | large | derler}");
-     System.out.println("  rss --keygen {small universe_file | large}");
+     System.out.println("  rss --keygen {small universe_file | large | derler}");
      System.out.println("  rss --sign {small | large} sign_key_file set_file policy");
+     System.out.println("  rss --sign derler sign_key_file set_file");
      System.out.println("  rss --redact {small | large} ver_key_file set_file subset_file policy sig_file");
-     System.out.println("  rss --verify {small | large} ver_key_file set_file signature_file\n");
+     System.out.println("  rss --redact derler ver_key_file set_fie subset_file sig_file");
+     System.out.println("  rss --verify {small | large | derler} ver_key_file set_file signature_file\n");
      System.out.println("options:");
      System.out.println("  -g, --keygen\t\tGenerates a key pair.");
      System.out.println("  -s, --sign\t\tSigns a set.");
@@ -145,6 +148,12 @@ public class Main
        printArgCountError(args.length, 0);
        rss = RedactableSetSignatureFactory.getRedactableSetSignature(
           "large-universe");
+     }
+     else if (algo.equals("derler"))
+     {
+       printArgCountError(args.length, 0);
+       rss = RedactableSetSignatureFactory.getRedactableSetSignature(
+          "derler-set");
      }
      else
      {
@@ -245,7 +254,10 @@ public class Main
      SetSignature sig = null;
 
      // Make sure we have enough arguments.
-     printArgCountError(args.length, 3);
+     if (algo.equals("derler"))
+      printArgCountError(args.length, 2);
+     else
+      printArgCountError(args.length, 3);
 
      // Load the keydata
      try
@@ -295,6 +307,12 @@ public class Main
           Base64.getDecoder().decode(keyData.getFirst()), null);
         rss = RedactableSetSignatureFactory.getRedactableSetSignature("large-universe");
      }
+     else if (algo.equals("derler"))
+     {
+       sk = RedactableSetSignatureKeyFactory.getSigningKey("derler-set",
+         Base64.getDecoder().decode(keyData.getFirst()), null);
+       rss = RedactableSetSignatureFactory.getRedactableSetSignature("derler-set");
+     }
      else
      {
        System.out.println("unknown algorithm " + algo);
@@ -304,7 +322,10 @@ public class Main
      try
      {
        rss.initSign(sk);
-       sig = rss.sign(set, args[2]);
+       if (algo.equals("derler"))
+        sig = rss.sign(set, null);
+       else
+        sig = rss.sign(set, args[2]);
      }
      catch (InvalidKeyException | SignatureException ex)
      {
@@ -312,9 +333,7 @@ public class Main
        System.exit(1);
      }
      System.out.println(Base64.getEncoder().encodeToString(sig.getEncoded()));
-
    }
-
 
    /**
     * Performs the redaction operation.
@@ -332,10 +351,13 @@ public class Main
       SetSignature sig = null;
       SetSignature rsig = null;
       String sigData = null;
-      String policy;
+      String policy = null;
 
       // Make sure we have enough arguments.
-      printArgCountError(args.length, 5);
+      if (algo.equals("derler"))
+        printArgCountError(args.length, 4);
+      else
+        printArgCountError(args.length, 5);
 
       // Load the keydata
       try
@@ -372,12 +394,16 @@ public class Main
       }
 
       // Set the policy.
-      policy = args[3];
+      if (!algo.equals("derler"))
+        policy = args[3];
 
       // Load the signature data.
       try
       {
-        sigData = loadSignature(args[4]);
+        if (algo.equals("derler"))
+          sigData = loadSignature(args[3]);
+        else
+          sigData = loadSignature(args[4]);
       }
       catch(FileNotFoundException | BadFileFormatException ex)
       {
@@ -410,6 +436,13 @@ public class Main
            Base64.getDecoder().decode(keyData.getFirst()), null);
          rss = RedactableSetSignatureFactory.getRedactableSetSignature("large-universe");
          sig = new LargeUniverseSetSignature(Base64.getDecoder().decode(sigData));
+      }
+      else if (algo.equals("derler"))
+      {
+        vk = RedactableSetSignatureKeyFactory.getVerificationKey("derler-set",
+          Base64.getDecoder().decode(keyData.getFirst()), null);
+        rss = RedactableSetSignatureFactory.getRedactableSetSignature("derler-set");
+        sig = new DerlerSetSignature(Base64.getDecoder().decode(sigData));
       }
       else
       {
@@ -502,6 +535,13 @@ public class Main
             Base64.getDecoder().decode(keyData.getFirst()), null);
           rss = RedactableSetSignatureFactory.getRedactableSetSignature("large-universe");
           sig = new LargeUniverseSetSignature(Base64.getDecoder().decode(sigData));
+       }
+       else if (algo.equals("derler"))
+       {
+         vk = RedactableSetSignatureKeyFactory.getVerificationKey("derler-set",
+           Base64.getDecoder().decode(keyData.getFirst()), null);
+         rss = RedactableSetSignatureFactory.getRedactableSetSignature("derler-set");
+         sig = new DerlerSetSignature(Base64.getDecoder().decode(sigData));
        }
        else
        {
