@@ -21,6 +21,8 @@ import crypto.rss.smalluniverse.SmallUniverseSigningKey;
 import crypto.rss.smalluniverse.SmallUniverseVerificationKey;
 import crypto.rss.largeuniverse.LargeUniverseSigningKey;
 import crypto.rss.largeuniverse.LargeUniverseVerificationKey;
+import crypto.rss.derler.DerlerVerificationKey;
+import crypto.rss.derler.DerlerSigningKey;
 import java.util.HashMap;
 
 /**
@@ -44,6 +46,8 @@ import java.util.HashMap;
         return new SmallUniverseSigningKey(encoded, universe);
      else if (algo.equals("large-universe"))
        return new LargeUniverseSigningKey(encoded);
+     else if (algo.equals("derler-set"))
+       return new DerlerSigningKey(encoded);
      return null;
    }
 
@@ -62,6 +66,8 @@ import java.util.HashMap;
         return new SmallUniverseVerificationKey(encoded, universe);
      else if (algo.equals("large-universe"))
        return new LargeUniverseVerificationKey(encoded);
+     else if (algo.equals("derler-set"))
+       return new DerlerVerificationKey(encoded);
      return null;
    }
  }

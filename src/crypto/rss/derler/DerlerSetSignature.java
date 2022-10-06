@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package crypto.rss.smalluniverse;
+package crypto.rss.derler;
 
 import crypto.rss.SetSignature;
 import util.DerEncoder;
@@ -27,28 +27,25 @@ import java.util.HashMap;
 import java.util.ArrayList;
 
 /**
- * This represenents the small universe signature on a set.
+ * This represenents the signature in the Derler et. al set scheme.
  * @author Zach Kissel
  */
- public class SmallUniverseSetSignature implements SetSignature
+ public class DerlerSetSignature implements SetSignature
  {
    private BigInteger acc;      // The accumulator value.
-   private String policy;       // The redaction policy.
    private byte[] signature;    // The signature on acc and secret.
    private HashMap<String, BigInteger> witness;     // The witnesses.
 
    /**
     * Constructs a new set signature.
     * @param acc the accumulator value.
-    * @param policy the redaction policy.
     * @param signature the signature on acc || secret.
     * @param witness the list of witnesses.
     */
-   public SmallUniverseSetSignature(BigInteger acc, String policy, byte[] signature,
+   public DerlerSetSignature(BigInteger acc, byte[] signature,
        HashMap<String, BigInteger> witness)
    {
      this.acc = acc;
-     this.policy = policy;
      this.signature = signature;
      this.witness = witness;
    }
@@ -59,7 +56,7 @@ import java.util.ArrayList;
     * @throws IllegalArgumentException if the DER encoded data is not a
     * valid signature.
     */
-    public SmallUniverseSetSignature(byte[] encoded)
+    public DerlerSetSignature(byte[] encoded)
         throws IllegalArgumentException
     {
       ArrayList<byte[]> seq = new ArrayList<>();
@@ -70,12 +67,11 @@ import java.util.ArrayList;
 
       seq = DerDecoder.decodeSequence(encoded);
       acc = DerDecoder.decodeBigInteger(seq.get(0));
-      policy = DerDecoder.decodeString(seq.get(1));
-      signature = DerDecoder.decodeOctets(seq.get(2));
+      signature = DerDecoder.decodeOctets(seq.get(1));
       witness = new HashMap<String, BigInteger>();
 
       // Decode the hash table data.
-      subseq = DerDecoder.decodeSequence(seq.get(3));
+      subseq = DerDecoder.decodeSequence(seq.get(2));
       for (int i = 0; i < subseq.size(); i++)
       {
         ArrayList<byte[]> record = DerDecoder.decodeSequence(subseq.get(i));
@@ -93,15 +89,6 @@ import java.util.ArrayList;
    {
      return acc;
    }
-
-   /**
-    * Gets the redaction policy.
-    * @return the redaction policy.
-    */
-    public String getPolicy()
-    {
-      return policy;
-    }
 
     /**
      * Gets the signature.
@@ -127,7 +114,7 @@ import java.util.ArrayList;
     */
    public String getAlgorithm()
    {
-     return "small-universe-set";
+     return "derler-set";
    }
 
    /**
@@ -140,7 +127,6 @@ import java.util.ArrayList;
       ArrayList<byte[]> subseq = new ArrayList<>();
 
       seq.add(DerEncoder.encodeBigInteger(acc));
-      seq.add(DerEncoder.encodeString(policy));
       seq.add(DerEncoder.encodeOctets(signature));
 
       // Encode the hash table such that we also encode

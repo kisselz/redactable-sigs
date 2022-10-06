@@ -19,6 +19,7 @@ package crypto.rss;
 
 import crypto.rss.largeuniverse.LargeUniverseRedactableSetSignature;
 import crypto.rss.smalluniverse.SmallUniverseRedactableSetSignature;
+import crypto.rss.derler.DerlerRedactableSetSignature;
 
 /**
  * This object implements a redactble signature scheme factory.
@@ -38,6 +39,8 @@ import crypto.rss.smalluniverse.SmallUniverseRedactableSetSignature;
       return new LargeUniverseRedactableSetSignature();
     else if (algo.equals("small-universe"))
       return new SmallUniverseRedactableSetSignature();
+    else if (algo.equals("derler-set"))
+      return new DerlerRedactableSetSignature();
     return null;
    }
  }

@@ -56,7 +56,8 @@ public class Main
    public static void displayUsage()
    {
      System.out.println("usage:");
-     System.out.println("  rss {--help | --test | --perf}");
+     System.out.println("  rss {--help | --test }");
+     System.out.println("  rss --perf {small | large | derler}");
      System.out.println("  rss --keygen {small universe_file | large}");
      System.out.println("  rss --sign {small | large} sign_key_file set_file policy");
      System.out.println("  rss --redact {small | large} ver_key_file set_file subset_file policy sig_file");
@@ -522,7 +523,7 @@ public class Main
          System.exit(1);
        }
      }
-     
+
    /**
     * Runs the performance tests for data collection purposes.
     * @param algo the algorithm to use for performance.
@@ -535,44 +536,44 @@ public class Main
        HashSet<String> set = new HashSet<String>();
        HashSet<String> subset = new HashSet<String>();
        SetSignature sig = null;
-       
+
        // Make sure we have no arguments.
        printArgCountError(args.length, 0);
-       
+
        // Build up the set.
        set.add("hello");
        set.add("good");
        set.add("fun");
        set.add("dog");
        set.add("cat");
-       
+
        // Build up the subset.
        subset.add("hello");
        subset.add("good");
-       
+
        if (algo.equals("large"))
        {
            // Generate the keys
            rss = RedactableSetSignatureFactory.getRedactableSetSignature(
-          "large-universe");
+             "large-universe");
            SignatureKeyPair kp = rss.keyGen(universe);
-           
+
            // Sign the set.
            rss.initSign(kp.getSigningKey());
            try
            {
-            sig = rss.sign(set, 
+            sig = rss.sign(set,
                    "(hello and good) or (fun and dog and cat)");
-           } 
+           }
            catch(InvalidKeyException | SignatureException ex)
            {
                System.out.println(ex);
            }
-           
+
            // Redact to subset.
            rss.initRedactVerify(kp.getVerificationKey());
            sig = rss.redact(set, subset, sig, "hello and good");
-           
+
            // Verify the signature on the subset.
            try
            {
@@ -587,33 +588,33 @@ public class Main
        {
            // Initialize the universe.
            universe = new HashMap<>();
-           
+
            universe.put("hello", 0);
            universe.put("good", 1);
            universe.put("fun", 2);
            universe.put("dog", 3);
            universe.put("cat", 4);
-           
+
           // Generate the keys
           rss = RedactableSetSignatureFactory.getRedactableSetSignature(
-          "small-universe");
+             "small-universe");
           SignatureKeyPair kp = rss.keyGen(universe);
-           
+
            // Sign the set.
            rss.initSign(kp.getSigningKey());
            try
            {
             sig = rss.sign(set, "11111, 11000, 00111");
-           } 
+           }
            catch(InvalidKeyException | SignatureException ex)
            {
                System.out.println(ex);
            }
-           
+
            // Redact to subset.
            rss.initRedactVerify(kp.getVerificationKey());
            sig = rss.redact(set, subset, sig, "11000");
-           
+
            // Verify the signature on the subset.
            try
            {
@@ -623,6 +624,38 @@ public class Main
            {
                System.out.println(ex);
            }
+       }
+       else if (algo.equals("derler"))
+       {
+         // Generate the keys
+         rss = RedactableSetSignatureFactory.getRedactableSetSignature(
+            "derler-set");
+         SignatureKeyPair kp = rss.keyGen(universe);
+
+         // Sign the set.
+         rss.initSign(kp.getSigningKey());
+         try
+         {
+          sig = rss.sign(set, null);
+         }
+         catch(InvalidKeyException | SignatureException ex)
+         {
+             System.out.println(ex);
+         }
+
+         // Redact to subset.
+         rss.initRedactVerify(kp.getVerificationKey());
+         sig = rss.redact(set, subset, sig, null);
+
+         // Verify the signature on the subset.
+         try
+         {
+          rss.vrfy(sig, subset);
+         }
+         catch (InvalidKeyException | SignatureException ex)
+         {
+             System.out.println(ex);
+         }
        }
        else
        {
@@ -685,7 +718,7 @@ public class Main
         printArgCountError(optParser.getNonOpts().length, 0);
         displayUsage();
        break;
-       
+
        case 'p': // For performance analyzer.
          handlePerf(currOpt.getSecond(), optParser.getNonOpts());
        break;

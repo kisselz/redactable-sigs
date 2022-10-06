@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package crypto.rss.smalluniverse;
+package crypto.rss.derler;
 
 import util.Pair;
 import util.Tuple;
@@ -45,22 +45,26 @@ import java.security.SecureRandom;
 
 
 /**
- * This class implements the small universe policy based redactable signature scheme
- * as discussed in:
- * "Policy-Based Redactable Set Signatures" by Zachary A. Kissel
+ * This class implements the Derler et. al redactable set signature scheme
+ * found in:
+ * <p>
+ * "A General Framework for Redactable Signatures and New Constructions"
+ * <br />
+ * David Derler, Henrich C. Pohls, Kai Samelin, Daniel Slamanig
+ * </p>
  *
  * @author Zach Kissel
  */
-public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
+public class DerlerRedactableSetSignature extends RedactableSetSignature
 {
-  private SmallUniverseSigningKey sk;
-  private SmallUniverseVerificationKey vk;
+  private DerlerSigningKey sk;
+  private DerlerVerificationKey vk;
   private Signature signScheme;
 
   /**
    * Constructs a new redactable set signature.
    */
-  public SmallUniverseRedactableSetSignature()
+  public DerlerRedactableSetSignature()
   {
     try
     {
@@ -71,25 +75,23 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
       System.out.println("Internal Error: ECDSA is not supported.");
       System.exit(1);
     }
-
-
   }
+
   /**
   * Generates a keypair. Generates an empty universe.
+  * @param universe the universe to draw the values from.
   * @return the signature key pair.
   */
-  public SignatureKeyPair keyGen()
+  public SignatureKeyPair keyGen(HashMap<String, Integer> universe)
   {
-    System.out.println("Warning: small set using empty universe.");
-    return keyGen(new HashMap<String, Integer>());
+    return keyGen();
   }
 
   /**
    * Generates a keypair.
-   * @param universe the unvirse of elements associated with the sets.
    * @return the signature key pair.
    */
-  public SignatureKeyPair keyGen(HashMap<String, Integer> universe)
+  public SignatureKeyPair keyGen()
   {
     AccumulatorKeyPair akp = Accumulator.keyGen();
     KeyPairGenerator keygen = null;
@@ -113,8 +115,8 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     KeyPair kp = keygen.genKeyPair();
 
     return new SignatureKeyPair(
-        new SmallUniverseSigningKey(akp.getPrivate(), kp.getPrivate(), universe),
-        new SmallUniverseVerificationKey(akp.getPublic(), kp.getPublic(), universe));
+        new DerlerSigningKey(akp.getPrivate(), kp.getPrivate()),
+        new DerlerVerificationKey(akp.getPublic(), kp.getPublic()));
   }
 
 
@@ -124,7 +126,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
    */
    public void initSign(SigningKey sk)
    {
-      this.sk = (SmallUniverseSigningKey) sk;
+      this.sk = (DerlerSigningKey) sk;
       this.vk = null;
    }
 
@@ -134,7 +136,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     */
   public void initRedactVerify(VerificationKey vk)
   {
-    this.vk = (SmallUniverseVerificationKey) vk;
+    this.vk = (DerlerVerificationKey) vk;
     this.sk = null;
   }
 
@@ -153,36 +155,17 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     Accumulator accumulator = new Accumulator();
     HashMap<String, BigInteger> witnesses = new HashMap<>();
     BigInteger acc;
-    String[] charSeq;
 
-    if (policy == null || policy.isEmpty())
-      throw new SignatureException("Policy required.");
+    if (policy != null)
+      throw new SignatureException("Policy not supported.");
 
-    // Split the characteristic sequences appart.
-    charSeq = policy.split(",");
-
-    String currCharSeq = computeCharSeq(set, sk.getUniverse());
-    if (currCharSeq == null)
-      throw new SignatureException("Set is not a subest of the universe.");
-
-    // Construct the accumulator that holds all of the characteristic
-    // strings that satisfy the policy
-    HashSet<String> accSet = new HashSet<>();
-    for (int i = 0; i < charSeq.length; i++)
-      accSet.add(charSeq[i].trim());
-
-
-    // Since it is easier now, we use the accSet to check to see if
-    // our set satisfies the policy.
-    if (!accSet.contains(currCharSeq))
-      throw new SignatureException("Set does not satisify policy.");
-
+    // Build the accumulator.
     accumulator.initAccumulate(sk.getAccumulatorKey());
-    Tuple<BigInteger,ArrayList<Pair<BigInteger>>> rv = accumulator.eval(accSet);
+    Tuple<BigInteger,ArrayList<Pair<BigInteger>>> rv = accumulator.eval(set);
     acc = rv.getFirst();
 
     // Build the collection of witnesses.
-    for (String ele : accSet)
+    for (String ele : set)
       witnesses.put(ele, accumulator.getWitness(ele, acc, rv.getSecond()));
 
     // Generate the signature on the accumulator value and secret.
@@ -190,7 +173,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     signScheme.update(acc.toByteArray());
     byte[] signature = signScheme.sign();
 
-    return new SmallUniverseSetSignature(acc, policy, signature, witnesses);
+    return new DerlerSetSignature(acc, signature, witnesses);
   }
 
   /**
@@ -205,37 +188,32 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
   public SetSignature redact(Set<String> set,
       Set<String> subset, SetSignature sig, String policy)
   {
-    SmallUniverseSetSignature theSig = (SmallUniverseSetSignature) sig;
-    String currCharSeq;
+    DerlerSetSignature theSig = (DerlerSetSignature) sig;
 
     // Parse the components of the signature.
     HashMap<String, BigInteger> witnesses = theSig.getWitnesses();
 
-    // Verify that set2 is a subset of set1
+    // Verify that setubst is a subset of set
     if (!set.containsAll(subset))
       return null;
 
-    // Build the subset's characteristic sequence and
-    // make sure we satisfy the policy.
-    currCharSeq = computeCharSeq(subset, vk.getUniverse());
-    if (currCharSeq == null)
-      return null;
-
-    if (!witnesses.containsKey(currCharSeq))
-      return null;
+    for (String ele : subset)
+      if (!witnesses.containsKey(ele))
+        return null;
 
     // At this point we know that we have a valid redaction.
     // We no proceed to perform the redaction by removing the
     // witnesses that are no longer valid.
     Set<String> keys = witnesses.keySet();
     HashSet<String> toRemove = new HashSet<>();
-    for (String key : keys)
-      if (!orCharSeq(currCharSeq, key).equals(currCharSeq))
+    for (String key : set)
+      if (!subset.contains(key))
         toRemove.add(key);
 
     for (String key : toRemove)
         witnesses.remove(key);
-    return new SmallUniverseSetSignature(theSig.getAccumulator(), policy,
+
+    return new DerlerSetSignature(theSig.getAccumulator(),
         theSig.getSignature(), witnesses);
   }
 
@@ -250,30 +228,30 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
   public boolean vrfy(SetSignature sig, Set<String> set)
     throws InvalidKeyException, SignatureException
   {
-    SmallUniverseSetSignature theSig = (SmallUniverseSetSignature) sig;
+    DerlerSetSignature theSig = (DerlerSetSignature) sig;
     Accumulator accumulator = new Accumulator();
     String element;
-    String charSeq;
 
     // Get the witness and share components of the signature.
     HashMap<String, BigInteger> witnesses = theSig.getWitnesses();
-
 
     // Verify the set elements and shares are correct by building
     // the charactersitic sequence and checking and verifying the
     // witness.
     accumulator.initVerify(vk.getAccumulatorKey());
 
-    charSeq = computeCharSeq(set, vk.getUniverse());
+    // Verify the accumulator membership for each element in
+    // the set.
+    for (String ele : set)
+    {
+      if (!witnesses.containsKey(ele))
+        return false;
 
-    // Make sure there is an element for the witness.
-    if (!witnesses.containsKey(charSeq))
-      return false;
-
-    // Verify the witness for the accumulator.
-    if (!accumulator.verify(theSig.getAccumulator(), witnesses.get(charSeq),
-        charSeq))
-      return false;
+      // Verify the witness for the accumulator.
+      if (!accumulator.verify(theSig.getAccumulator(), witnesses.get(ele),
+          ele))
+        return false;
+    }
 
     // Verify the signature on the accumulator.
     signScheme.initVerify(vk.getSignatureKey());
@@ -282,62 +260,4 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     return signScheme.verify(theSig.getSignature());
   }
 
-  /********************************************************
-   *
-   * Private Methods
-   *
-   ********************************************************/
-
-   /**
-    * Computes the charactersitic sequence for a set given the
-    * description of the universe.
-    * @param set the set to compute the characteristic sequence of.
-    * @param universe the universe the set should be drawn from.
-    * @return the characteristic sequence.
-    */
-    private String computeCharSeq(Set<String> set,
-       HashMap<String, Integer> universe)
-    {
-      BitSet seq = new BitSet(universe.size());
-
-      for (String ele : set)
-      {
-        if (!universe.containsKey(ele))
-          return null;
-        seq.set(universe.get(ele));
-      }
-
-      // Build the string.
-      String rv = "";
-      for (int i = 0; i < universe.size(); i++)
-          if (seq.get(i))
-               rv += "1";
-          else
-              rv += 0;
-      return rv;
-    }
-
-    /**
-     * Computes the logical or of the two bit strings {@code cs1} and
-     * {@code cs2}.
-     * @param cs1 the first bit string.
-     * @param cs2 the second bit string.
-     * @param the logical or of the two bit strings.
-     */
-    private String orCharSeq(String cs1, String cs2)
-    {
-      String res = "";
-      if (cs1.length() != cs2.length())
-        return null;
-
-      for (int i = 0; i < cs1.length(); i++)
-      {
-        if (cs1.charAt(i) == '0' && cs2.charAt(i) == '0')
-          res += "0";
-        else
-          res += "1";
-      }
-
-      return res;
-    }
 }
