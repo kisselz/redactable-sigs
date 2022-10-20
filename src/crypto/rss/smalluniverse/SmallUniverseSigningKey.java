@@ -18,7 +18,7 @@
 package crypto.rss.smalluniverse;
 
 import crypto.rss.largeuniverse.LargeUniverseSigningKey;
-import crypto.accumulator.AccumulatorPrivateKey;
+import crypto.accumulator.ECCAccumulatorPrivateKey;
 import java.security.PrivateKey;
 import java.util.HashMap;
 
@@ -36,7 +36,7 @@ public class SmallUniverseSigningKey extends LargeUniverseSigningKey
    * @param sk the signing key.
    * @param universe a description of the universe sets are drawn from.
    */
-   public SmallUniverseSigningKey(AccumulatorPrivateKey ask, PrivateKey sk,
+   public SmallUniverseSigningKey(ECCAccumulatorPrivateKey ask, PrivateKey sk,
       HashMap<String, Integer> universe)
    {
       super(ask, sk);

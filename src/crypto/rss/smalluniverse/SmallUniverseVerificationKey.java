@@ -18,7 +18,7 @@
 package crypto.rss.smalluniverse;
 
 import crypto.rss.largeuniverse.LargeUniverseVerificationKey;
-import crypto.accumulator.AccumulatorPublicKey;
+import crypto.accumulator.ECCAccumulatorPublicKey;
 import java.security.PublicKey;
 import java.util.HashMap;
 
@@ -36,7 +36,7 @@ public class SmallUniverseVerificationKey extends LargeUniverseVerificationKey
    * @param pk the signature public key.
    * @param universe a description of the universe sets are drawn from.
    */
-   public SmallUniverseVerificationKey(AccumulatorPublicKey apk, PublicKey pk,
+   public SmallUniverseVerificationKey(ECCAccumulatorPublicKey apk, PublicKey pk,
       HashMap<String, Integer> universe)
    {
       super(apk, pk);

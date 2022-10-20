@@ -47,6 +47,7 @@ import util.LongOption;
     public void testCore()
     {
       runAccumulatorTest();
+      runECCAccumulatorTest();
       runThresholdSecretSharingTest();
       runPolicyLangTest();
     }
@@ -60,6 +61,7 @@ import util.LongOption;
        AccumulatorKeyPair akp = Accumulator.keyGen();
        Accumulator acc = new Accumulator();
        acc.initAccumulate(akp.getPrivate());
+
        HashSet<String> set = new HashSet<>();
        set.add("Hello");
        set.add("World");
@@ -230,4 +232,40 @@ import util.LongOption;
       System.out.println("\tSeq[0] = " + DerDecoder.decodeBigInteger(seq.get(0)));
       System.out.println("\tSeq[1] = " + DerDecoder.decodeBigInteger(seq.get(1)));
      }
+
+     /**
+      * Test the ECC accumulator.
+      */
+     public void runECCAccumulatorTest()
+     {
+       System.out.println("\n\n === ECC Accumulator ===");
+
+       ECCAccumulator acc = new ECCAccumulator();
+       ECCAccumulatorKeyPair kp = ECCAccumulator.keyGen();
+
+
+       acc.initAccumulate(kp.getPrivate());
+       HashSet<String> set = new HashSet<>();
+       set.add("Hello");
+       set.add("World");
+       set.add("Bye");
+       set.add("cat:(0, 0)");
+       System.out.print("Building accumulator . . . ");
+       byte[] av  = acc.eval(set);
+       System.out.println("[ DONE ]");
+
+       // Test the verification.
+       for (String ele : set)
+       {
+         acc.initAccumulate(kp.getPrivate());
+         byte[] wit = acc.getWitness(ele, av);
+         acc.initVerify(kp.getPublic());
+         System.out.print("Verify \"" + ele + "\" . . . ");
+         if (acc.verify(av, wit, ele))
+          System.out.println("[ OK ]");
+         else
+          System.out.println("[ FAIL ]");
+       }
+
+    }
  }

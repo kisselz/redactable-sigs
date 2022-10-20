@@ -18,7 +18,7 @@
 package crypto.rss.derler;
 
 import crypto.rss.largeuniverse.LargeUniverseVerificationKey;
-import crypto.accumulator.AccumulatorPublicKey;
+import crypto.accumulator.ECCAccumulatorPublicKey;
 import java.security.PublicKey;
 import java.util.HashMap;
 
@@ -35,7 +35,7 @@ public class DerlerVerificationKey extends LargeUniverseVerificationKey
    * @param apk the accumulator public key.
    * @param pk the signature public key.
    */
-   public DerlerVerificationKey(AccumulatorPublicKey apk, PublicKey pk)
+   public DerlerVerificationKey(ECCAccumulatorPublicKey apk, PublicKey pk)
    {
       super(apk, pk);
    }

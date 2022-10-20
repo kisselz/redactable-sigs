@@ -19,6 +19,7 @@ package cli;
 
 import util.Tuple;
 import util.Pair;
+import util.StopWatch;
 import crypto.rss.RedactableSetSignature;
 import crypto.rss.RedactableSetSignatureFactory;
 import crypto.rss.SignatureKeyPair;
@@ -50,6 +51,8 @@ import java.util.Base64;
  */
 public class Main
 {
+
+  private static StopWatch timer;
 
   /**
    * Displays the usage message to the screen and exits.
@@ -160,7 +163,9 @@ public class Main
        System.out.println("unknown algorithm " + algo);
        displayUsage();
      }
+     timer.start();
      SignatureKeyPair kp = rss.keyGen(universe);
+     long elapsed = timer.stop();
      System.out.println("=== Verification Key ===");
      System.out.println(Base64.getEncoder().encodeToString(
         kp.getVerificationKey().getEncoded()));
@@ -172,6 +177,8 @@ public class Main
         kp.getSigningKey().getEncoded()));
      if (!uFile.isEmpty())
       System.out.println(uFile);
+
+    System.out.println("Elapsed Time: " + elapsed + " ns.");
 
    }
 
@@ -252,6 +259,7 @@ public class Main
      HashSet<String> set = null;
      SigningKey sk = null;
      SetSignature sig = null;
+     String policy = null;
 
      // Make sure we have enough arguments.
      if (algo.equals("derler"))
@@ -284,6 +292,7 @@ public class Main
 
      if (algo.equals("small"))
      {
+       policy = args[2];
        if (keyData.getSecond() == null)
         System.out.println("Missing universe.");
        try
@@ -303,6 +312,7 @@ public class Main
      }
      else if (algo.equals("large"))
      {
+       policy = args[2];
         sk = RedactableSetSignatureKeyFactory.getSigningKey("large-universe",
           Base64.getDecoder().decode(keyData.getFirst()), null);
         rss = RedactableSetSignatureFactory.getRedactableSetSignature("large-universe");
@@ -321,11 +331,10 @@ public class Main
 
      try
      {
-       rss.initSign(sk);
-       if (algo.equals("derler"))
-        sig = rss.sign(set, null);
-       else
-        sig = rss.sign(set, args[2]);
+      rss.initSign(sk);
+      timer.start();
+      sig = rss.sign(set, policy);
+      System.out.println("Elapsed Time: " + timer.stop() + " ns.");
      }
      catch (InvalidKeyException | SignatureException ex)
      {
@@ -451,8 +460,9 @@ public class Main
       }
 
       rss.initRedactVerify(vk);
+      timer.start();
       rsig = rss.redact(set, subset, sig, policy);
-
+      System.out.println("Elapsed Time: " + timer.stop() + " ns.");
       if (rsig == null)
         System.out.println("Redacted set is not valid.");
       else
@@ -552,10 +562,12 @@ public class Main
        try
        {
          rss.initRedactVerify(vk);
+         timer.start();
          if (rss.vrfy(sig, set))
            System.out.println("\t=> \u001B[32mAccept.\u001B[0m");
          else
            System.out.println("\t=> \u001B[31mReject.\u001B[0m");
+         System.out.println("Elapsed Time: " + timer.stop() + " ns.");
        }
        catch (InvalidKeyException | SignatureException ex)
        {
@@ -751,7 +763,7 @@ public class Main
        case 't':  // run internal sanity tests.
         printArgCountError(optParser.getNonOpts().length, 0);
         Test t = new Test();
-        t.runDERTest();
+        t.testCore();
        break;
 
        case 'h':  // Display help.
@@ -777,6 +789,7 @@ public class Main
   {
     if (args.length < 1)
       displayUsage();
+    timer = new StopWatch();    // Create a gloabal stopwatch.
     processCommand(args);
 
   }

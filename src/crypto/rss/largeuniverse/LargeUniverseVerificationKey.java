@@ -18,7 +18,7 @@
 package crypto.rss.largeuniverse;
 
 import crypto.rss.VerificationKey;
-import crypto.accumulator.AccumulatorPublicKey;
+import crypto.accumulator.ECCAccumulatorPublicKey;
 import util.DerEncoder;
 import util.DerDecoder;
 import java.security.PublicKey;
@@ -36,7 +36,7 @@ import java.util.ArrayList;
 public class LargeUniverseVerificationKey implements VerificationKey
 {
 
-  private AccumulatorPublicKey apk;
+  private ECCAccumulatorPublicKey apk;
   private PublicKey pk;
 
   /**
@@ -45,7 +45,7 @@ public class LargeUniverseVerificationKey implements VerificationKey
    * @param apk the accumulator public key.
    * @param pk the signing public key.
    */
-  public LargeUniverseVerificationKey(AccumulatorPublicKey apk, PublicKey pk)
+  public LargeUniverseVerificationKey(ECCAccumulatorPublicKey apk, PublicKey pk)
   {
     this.apk = apk;
     this.pk = pk;
@@ -63,7 +63,7 @@ public class LargeUniverseVerificationKey implements VerificationKey
       throw new IllegalArgumentException("Invalid key");
 
     ArrayList<byte[]> subkeys = DerDecoder.decodeSequence(encoded);
-    apk = new AccumulatorPublicKey(subkeys.get(0));
+    apk = new ECCAccumulatorPublicKey(subkeys.get(0));
 
     X509EncodedKeySpec spec = new X509EncodedKeySpec(subkeys.get(1));
     try
@@ -86,7 +86,7 @@ public class LargeUniverseVerificationKey implements VerificationKey
    * Gets the accumulator public key.
    * @return the accumulator public key.
    */
-  public AccumulatorPublicKey getAccumulatorKey()
+  public ECCAccumulatorPublicKey getAccumulatorKey()
   {
     return apk;
   }

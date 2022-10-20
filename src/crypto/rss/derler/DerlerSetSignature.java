@@ -32,9 +32,9 @@ import java.util.ArrayList;
  */
  public class DerlerSetSignature implements SetSignature
  {
-   private BigInteger acc;      // The accumulator value.
+   private byte[] acc;      // The accumulator value.
    private byte[] signature;    // The signature on acc and secret.
-   private HashMap<String, BigInteger> witness;     // The witnesses.
+   private HashMap<String, byte[]> witness;     // The witnesses.
 
    /**
     * Constructs a new set signature.
@@ -42,8 +42,8 @@ import java.util.ArrayList;
     * @param signature the signature on acc || secret.
     * @param witness the list of witnesses.
     */
-   public DerlerSetSignature(BigInteger acc, byte[] signature,
-       HashMap<String, BigInteger> witness)
+   public DerlerSetSignature(byte[] acc, byte[] signature,
+       HashMap<String, byte[]> witness)
    {
      this.acc = acc;
      this.signature = signature;
@@ -66,9 +66,9 @@ import java.util.ArrayList;
         throw new IllegalArgumentException("Invalide Signature");
 
       seq = DerDecoder.decodeSequence(encoded);
-      acc = DerDecoder.decodeBigInteger(seq.get(0));
+      acc = DerDecoder.decodeOctets(seq.get(0));
       signature = DerDecoder.decodeOctets(seq.get(1));
-      witness = new HashMap<String, BigInteger>();
+      witness = new HashMap<String, byte[]>();
 
       // Decode the hash table data.
       subseq = DerDecoder.decodeSequence(seq.get(2));
@@ -76,7 +76,7 @@ import java.util.ArrayList;
       {
         ArrayList<byte[]> record = DerDecoder.decodeSequence(subseq.get(i));
         String key = DerDecoder.decodeString(record.get(0));
-        BigInteger wit = DerDecoder.decodeBigInteger(record.get(1));
+        byte[] wit = DerDecoder.decodeOctets(record.get(1));
         witness.put(key, wit);
       }
    }
@@ -85,7 +85,7 @@ import java.util.ArrayList;
     * Gets the accumulator value.
     * @return the accumulator value.
     */
-   public BigInteger getAccumulator()
+   public byte[] getAccumulator()
    {
      return acc;
    }
@@ -103,7 +103,7 @@ import java.util.ArrayList;
     * Gets the list of witnesses.
     * @return the list of witnesses.
     */
-    public HashMap<String, BigInteger> getWitnesses()
+    public HashMap<String, byte[]> getWitnesses()
     {
       return witness;
     }
@@ -126,7 +126,7 @@ import java.util.ArrayList;
       ArrayList<byte[]> seq = new ArrayList<>();
       ArrayList<byte[]> subseq = new ArrayList<>();
 
-      seq.add(DerEncoder.encodeBigInteger(acc));
+      seq.add(DerEncoder.encodeOctets(acc));
       seq.add(DerEncoder.encodeOctets(signature));
 
       // Encode the hash table such that we also encode
@@ -135,7 +135,7 @@ import java.util.ArrayList;
       {
          ArrayList<byte[]> record = new ArrayList<>();
          record.add(DerEncoder.encodeString(key));
-         record.add(DerEncoder.encodeBigInteger(witness.get(key)));
+         record.add(DerEncoder.encodeOctets(witness.get(key)));
          subseq.add(DerEncoder.encodeSequence(record));
       }
       seq.add(DerEncoder.encodeSequence(subseq));

@@ -18,7 +18,7 @@
 package crypto.rss.derler;
 
 import crypto.rss.largeuniverse.LargeUniverseSigningKey;
-import crypto.accumulator.AccumulatorPrivateKey;
+import crypto.accumulator.ECCAccumulatorPrivateKey;
 import java.security.PrivateKey;
 
 /**
@@ -34,7 +34,7 @@ public class DerlerSigningKey extends LargeUniverseSigningKey
    * @param ask the accumulator private key.
    * @param sk the signing key.
    */
-   public DerlerSigningKey(AccumulatorPrivateKey ask, PrivateKey sk)
+   public DerlerSigningKey(ECCAccumulatorPrivateKey ask, PrivateKey sk)
    {
       super(ask, sk);
    }

@@ -19,7 +19,7 @@
   <target name="compile" depends="init"
         description="Compile source code">
     <javac debug="true" debuglevel="source,lines,vars" includeantruntime="false"
-      srcdir="${src}" destdir="${build}">
+      srcdir="${src}" destdir="${build}" classpath="lib/jpbc-api.jar;lib/jpbc-plaf.jar">
        <compilerarg value="-Xlint:unchecked" />
     </javac>
   </target>
@@ -34,11 +34,14 @@
       <manifest>
         <attribute name="Main-Class" value="cli/Main" />
       </manifest>
+      <!-- Include the JPBC jar files needed for pairing crypto. -->
+      <zipfileset src="lib/jpbc-api.jar" excludes="META-INF/*.SF" />
+      <zipfileset src="lib/jpbc-plaf.jar" excludes="META-INF/*.SF" />
     </jar>
   </target>
 
    <target name="api" depends="init" description="generate javadoc">
-    <javadoc sourcepath="${src}" destdir="${api}"/>
+    <javadoc sourcepath="${src}" destdir="${api}" classpath="lib/jpbc-api.jar;lib/jpbc-plaf.jar"/>
   </target>
 
   <!-- Run target for Netbeans and other IDEs supporting ant -->

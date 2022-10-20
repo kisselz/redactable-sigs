@@ -136,7 +136,7 @@ import java.io.UnsupportedEncodingException;
       int numLenBytes;
 
       // Compute the number of bytes necessary to hold the length.
-      numLenBytes = (int) Math.ceil(Math.log(payload.length)/(8*Math.log(2)));
+      numLenBytes = (int) Math.ceil(Math.log(payload.length)/(8*Math.log(2))) + 1;
 
       byte[] hdr = new byte[2];
       hdr[0] = type;

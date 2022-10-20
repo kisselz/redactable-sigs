@@ -24,8 +24,8 @@ import crypto.rss.SignatureKeyPair;
 import crypto.rss.SigningKey;
 import crypto.rss.VerificationKey;
 import crypto.rss.RedactableSetSignature;
-import crypto.accumulator.AccumulatorKeyPair;
-import crypto.accumulator.Accumulator;
+import crypto.accumulator.ECCAccumulatorKeyPair;
+import crypto.accumulator.ECCAccumulator;
 import policylang.Policy;
 
 import java.math.BigInteger;
@@ -42,6 +42,8 @@ import java.security.InvalidKeyException;
 import java.security.spec.ECGenParameterSpec;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.SecureRandom;
+
+import java.util.Base64;
 
 /**
  * This class implements the large universe policy based redactable signature scheme
@@ -78,7 +80,7 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
    */
   public SignatureKeyPair keyGen()
   {
-    AccumulatorKeyPair akp = Accumulator.keyGen();
+    ECCAccumulatorKeyPair akp = ECCAccumulator.keyGen();
     KeyPairGenerator keygen = null;
 
     try
@@ -145,9 +147,9 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
   public SetSignature sign(Set<String> set, String policy)
     throws InvalidKeyException, SignatureException
   {
-    Accumulator accumulator = new Accumulator();
-    HashMap<String, BigInteger> witnesses = new HashMap<>();
-    BigInteger acc;
+    ECCAccumulator accumulator = new ECCAccumulator();
+    HashMap<String, byte[]> witnesses = new HashMap<>();
+    byte[] acc;
 
     if (policy == null || policy.isEmpty())
       throw new SignatureException("Policy required.");
@@ -167,19 +169,18 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
       if (shares.containsKey(ele))
         accSet.add(ele + ":" + shares.get(ele));
       else
-        accSet.add(ele + ":(0,0)");
+        accSet.add(ele + ":(0, 0)");
     }
     accumulator.initAccumulate(sk.getAccumulatorKey());
-    Tuple<BigInteger,ArrayList<Pair<BigInteger>>> rv = accumulator.eval(accSet);
-    acc = rv.getFirst();
+    acc = accumulator.eval(accSet);
 
     // Build the collection of witnesses.
     for (String ele : accSet)
-      witnesses.put(ele, accumulator.getWitness(ele, acc, rv.getSecond()));
+      witnesses.put(ele, accumulator.getWitness(ele, acc));
 
     // Generate the signature on the accumulator value and secret.
     signScheme.initSign(sk.getSignatureKey());
-    signScheme.update(acc.toByteArray());
+    signScheme.update(acc);
     signScheme.update(secret.toByteArray());
     byte[] signature = signScheme.sign();
 
@@ -201,7 +202,7 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
     LargeUniverseSetSignature theSig = (LargeUniverseSetSignature) sig;
 
     // Parse the components of the signature.
-    HashMap<String, BigInteger> witnesses = theSig.getWitnesses();
+    HashMap<String, byte[]> witnesses = theSig.getWitnesses();
     HashMap<String,Pair<BigInteger>> shares = theSig.getShares();
 
     // Verify that set2 is a subset of set1
@@ -251,12 +252,12 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
     throws InvalidKeyException, SignatureException
   {
     LargeUniverseSetSignature theSig = (LargeUniverseSetSignature) sig;
-    Accumulator accumulator = new Accumulator();
+    ECCAccumulator accumulator = new ECCAccumulator();
     String element;
     Policy pol;
 
     // Get the witness and share components of the signature.
-    HashMap<String, BigInteger> witnesses = theSig.getWitnesses();
+    HashMap<String, byte[]> witnesses = theSig.getWitnesses();
     HashMap<String,Pair<BigInteger>> shares = theSig.getShares();
 
     // Verify the set elements and shares are correct.
@@ -268,7 +269,7 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
       if (shares.containsKey(ele))
         element = ele + ":" + shares.get(ele);
       else
-        element = ele + ":(0,0)";
+        element = ele + ":(0, 0)";
 
       // Make sure there is an element for the witness.
       if (!witnesses.containsKey(element))
@@ -296,7 +297,7 @@ public class LargeUniverseRedactableSetSignature extends RedactableSetSignature
 
     // Verify the signature on the shares.
     signScheme.initVerify(vk.getSignatureKey());
-    signScheme.update(theSig.getAccumulator().toByteArray());
+    signScheme.update(theSig.getAccumulator());
     signScheme.update(secret.toByteArray());
 
     return signScheme.verify(theSig.getSignature());

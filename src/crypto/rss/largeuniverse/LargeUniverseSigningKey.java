@@ -18,7 +18,7 @@
 package crypto.rss.largeuniverse;
 
 import crypto.rss.SigningKey;
-import crypto.accumulator.AccumulatorPrivateKey;
+import crypto.accumulator.ECCAccumulatorPrivateKey;
 import util.DerEncoder;
 import util.DerDecoder;
 import java.security.PrivateKey;
@@ -35,7 +35,7 @@ import java.util.ArrayList;
  */
 public class LargeUniverseSigningKey implements SigningKey
 {
-  private AccumulatorPrivateKey ask;
+  private ECCAccumulatorPrivateKey ask;
   private PrivateKey sk;
 
   /**
@@ -44,7 +44,7 @@ public class LargeUniverseSigningKey implements SigningKey
    * @param ask the accumulator private key.
    * @param sk the private key for the signature algorithm.
    */
-  public LargeUniverseSigningKey(AccumulatorPrivateKey ask, PrivateKey sk)
+  public LargeUniverseSigningKey(ECCAccumulatorPrivateKey ask, PrivateKey sk)
   {
     this.ask = ask;
     this.sk = sk;
@@ -62,7 +62,7 @@ public class LargeUniverseSigningKey implements SigningKey
       throw new IllegalArgumentException("Invalid key");
 
     ArrayList<byte[]> subkeys = DerDecoder.decodeSequence(encoded);
-    ask = new AccumulatorPrivateKey(subkeys.get(0));
+    ask = new ECCAccumulatorPrivateKey(subkeys.get(0));
 
     PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(subkeys.get(1));
     try
@@ -84,7 +84,7 @@ public class LargeUniverseSigningKey implements SigningKey
    * Gets the accumulator private key.
    * @return the accumulator private key.
    */
-  public AccumulatorPrivateKey getAccumulatorKey()
+  public ECCAccumulatorPrivateKey getAccumulatorKey()
   {
     return ask;
   }

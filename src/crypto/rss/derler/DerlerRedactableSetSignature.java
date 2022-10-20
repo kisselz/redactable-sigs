@@ -24,8 +24,8 @@ import crypto.rss.SignatureKeyPair;
 import crypto.rss.SigningKey;
 import crypto.rss.VerificationKey;
 import crypto.rss.RedactableSetSignature;
-import crypto.accumulator.AccumulatorKeyPair;
-import crypto.accumulator.Accumulator;
+import crypto.accumulator.ECCAccumulatorKeyPair;
+import crypto.accumulator.ECCAccumulator;
 
 import java.math.BigInteger;
 import java.util.Set;
@@ -93,7 +93,7 @@ public class DerlerRedactableSetSignature extends RedactableSetSignature
    */
   public SignatureKeyPair keyGen()
   {
-    AccumulatorKeyPair akp = Accumulator.keyGen();
+    ECCAccumulatorKeyPair akp = ECCAccumulator.keyGen();
     KeyPairGenerator keygen = null;
 
     try
@@ -152,25 +152,24 @@ public class DerlerRedactableSetSignature extends RedactableSetSignature
   public SetSignature sign(Set<String> set, String policy)
     throws InvalidKeyException, SignatureException
   {
-    Accumulator accumulator = new Accumulator();
-    HashMap<String, BigInteger> witnesses = new HashMap<>();
-    BigInteger acc;
+    ECCAccumulator accumulator = new ECCAccumulator();
+    HashMap<String, byte[]> witnesses = new HashMap<>();
+    byte[] acc;
 
     if (policy != null)
       throw new SignatureException("Policy not supported.");
 
     // Build the accumulator.
     accumulator.initAccumulate(sk.getAccumulatorKey());
-    Tuple<BigInteger,ArrayList<Pair<BigInteger>>> rv = accumulator.eval(set);
-    acc = rv.getFirst();
+    acc = accumulator.eval(set);
 
     // Build the collection of witnesses.
     for (String ele : set)
-      witnesses.put(ele, accumulator.getWitness(ele, acc, rv.getSecond()));
+      witnesses.put(ele, accumulator.getWitness(ele, acc));
 
     // Generate the signature on the accumulator value and secret.
     signScheme.initSign(sk.getSignatureKey());
-    signScheme.update(acc.toByteArray());
+    signScheme.update(acc);
     byte[] signature = signScheme.sign();
 
     return new DerlerSetSignature(acc, signature, witnesses);
@@ -191,7 +190,7 @@ public class DerlerRedactableSetSignature extends RedactableSetSignature
     DerlerSetSignature theSig = (DerlerSetSignature) sig;
 
     // Parse the components of the signature.
-    HashMap<String, BigInteger> witnesses = theSig.getWitnesses();
+    HashMap<String, byte[]> witnesses = theSig.getWitnesses();
 
     // Verify that setubst is a subset of set
     if (!set.containsAll(subset))
@@ -229,11 +228,11 @@ public class DerlerRedactableSetSignature extends RedactableSetSignature
     throws InvalidKeyException, SignatureException
   {
     DerlerSetSignature theSig = (DerlerSetSignature) sig;
-    Accumulator accumulator = new Accumulator();
+    ECCAccumulator accumulator = new ECCAccumulator();
     String element;
 
     // Get the witness and share components of the signature.
-    HashMap<String, BigInteger> witnesses = theSig.getWitnesses();
+    HashMap<String, byte[]> witnesses = theSig.getWitnesses();
 
     // Verify the set elements and shares are correct by building
     // the charactersitic sequence and checking and verifying the
@@ -255,7 +254,7 @@ public class DerlerRedactableSetSignature extends RedactableSetSignature
 
     // Verify the signature on the accumulator.
     signScheme.initVerify(vk.getSignatureKey());
-    signScheme.update(theSig.getAccumulator().toByteArray());
+    signScheme.update(theSig.getAccumulator());
 
     return signScheme.verify(theSig.getSignature());
   }

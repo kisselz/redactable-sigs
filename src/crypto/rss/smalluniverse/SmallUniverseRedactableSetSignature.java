@@ -24,8 +24,8 @@ import crypto.rss.SignatureKeyPair;
 import crypto.rss.SigningKey;
 import crypto.rss.VerificationKey;
 import crypto.rss.RedactableSetSignature;
-import crypto.accumulator.AccumulatorKeyPair;
-import crypto.accumulator.Accumulator;
+import crypto.accumulator.ECCAccumulatorKeyPair;
+import crypto.accumulator.ECCAccumulator;
 
 import java.math.BigInteger;
 import java.util.Set;
@@ -91,7 +91,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
    */
   public SignatureKeyPair keyGen(HashMap<String, Integer> universe)
   {
-    AccumulatorKeyPair akp = Accumulator.keyGen();
+    ECCAccumulatorKeyPair akp = ECCAccumulator.keyGen();
     KeyPairGenerator keygen = null;
 
     try
@@ -150,9 +150,9 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
   public SetSignature sign(Set<String> set, String policy)
     throws InvalidKeyException, SignatureException
   {
-    Accumulator accumulator = new Accumulator();
-    HashMap<String, BigInteger> witnesses = new HashMap<>();
-    BigInteger acc;
+    ECCAccumulator accumulator = new ECCAccumulator();
+    HashMap<String, byte[]> witnesses = new HashMap<>();
+    byte[] acc;
     String[] charSeq;
 
     if (policy == null || policy.isEmpty())
@@ -178,16 +178,15 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
       throw new SignatureException("Set does not satisify policy.");
 
     accumulator.initAccumulate(sk.getAccumulatorKey());
-    Tuple<BigInteger,ArrayList<Pair<BigInteger>>> rv = accumulator.eval(accSet);
-    acc = rv.getFirst();
+    acc = accumulator.eval(accSet);
 
     // Build the collection of witnesses.
     for (String ele : accSet)
-      witnesses.put(ele, accumulator.getWitness(ele, acc, rv.getSecond()));
+      witnesses.put(ele, accumulator.getWitness(ele, acc));
 
     // Generate the signature on the accumulator value and secret.
     signScheme.initSign(sk.getSignatureKey());
-    signScheme.update(acc.toByteArray());
+    signScheme.update(acc);
     byte[] signature = signScheme.sign();
 
     return new SmallUniverseSetSignature(acc, policy, signature, witnesses);
@@ -209,7 +208,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     String currCharSeq;
 
     // Parse the components of the signature.
-    HashMap<String, BigInteger> witnesses = theSig.getWitnesses();
+    HashMap<String, byte[]> witnesses = theSig.getWitnesses();
 
     // Verify that set2 is a subset of set1
     if (!set.containsAll(subset))
@@ -251,12 +250,12 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
     throws InvalidKeyException, SignatureException
   {
     SmallUniverseSetSignature theSig = (SmallUniverseSetSignature) sig;
-    Accumulator accumulator = new Accumulator();
+    ECCAccumulator accumulator = new ECCAccumulator();
     String element;
     String charSeq;
 
     // Get the witness and share components of the signature.
-    HashMap<String, BigInteger> witnesses = theSig.getWitnesses();
+    HashMap<String, byte[]> witnesses = theSig.getWitnesses();
 
 
     // Verify the set elements and shares are correct by building
@@ -277,7 +276,7 @@ public class SmallUniverseRedactableSetSignature extends RedactableSetSignature
 
     // Verify the signature on the accumulator.
     signScheme.initVerify(vk.getSignatureKey());
-    signScheme.update(theSig.getAccumulator().toByteArray());
+    signScheme.update(theSig.getAccumulator());
 
     return signScheme.verify(theSig.getSignature());
   }

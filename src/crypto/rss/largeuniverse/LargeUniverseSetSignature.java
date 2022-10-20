@@ -33,10 +33,10 @@ import java.util.ArrayList;
  */
  public class LargeUniverseSetSignature implements SetSignature
  {
-   private BigInteger acc;      // The accumulator value.
+   private byte[] acc;      // The accumulator value.
    private String policy;       // The redaction policy.
    private byte[] signature;    // The signature on acc and secret.
-   private HashMap<String, BigInteger> witness;     // The witnesses.
+   private HashMap<String, byte[]> witness;     // The witnesses.
    private HashMap<String,Pair<BigInteger>> shares; // The shares of secret.
 
    /**
@@ -47,8 +47,8 @@ import java.util.ArrayList;
     * @param witness the list of witnesses.
     * @param shares the shares associated with each element.
     */
-   public LargeUniverseSetSignature(BigInteger acc, String policy, byte[] signature,
-       HashMap<String, BigInteger> witness,
+   public LargeUniverseSetSignature(byte[] acc, String policy, byte[] signature,
+       HashMap<String, byte[]> witness,
        HashMap<String, Pair<BigInteger>> shares)
    {
      this.acc = acc;
@@ -74,10 +74,10 @@ import java.util.ArrayList;
         throw new IllegalArgumentException("Invalide Signature");
 
       seq = DerDecoder.decodeSequence(encoded);
-      acc = DerDecoder.decodeBigInteger(seq.get(0));
+      acc = DerDecoder.decodeOctets(seq.get(0));
       policy = DerDecoder.decodeString(seq.get(1));
       signature = DerDecoder.decodeOctets(seq.get(2));
-      witness = new HashMap<String, BigInteger>();
+      witness = new HashMap<String, byte[]>();
       shares = new HashMap<String, Pair<BigInteger>>();
 
       // Decode the hash table data.
@@ -89,7 +89,7 @@ import java.util.ArrayList;
         String key = DerDecoder.decodeString(record.get(0));
         BigInteger x = DerDecoder.decodeBigInteger(record.get(1));
         BigInteger y = DerDecoder.decodeBigInteger(record.get(2));
-        BigInteger wit = DerDecoder.decodeBigInteger(record.get(3));
+        byte[] wit = DerDecoder.decodeOctets(record.get(3));
 
         if (x.compareTo(BigInteger.ZERO) == 0 &&
            y.compareTo(BigInteger.ZERO) == 0)
@@ -106,7 +106,7 @@ import java.util.ArrayList;
     * Gets the accumulator value.
     * @return the accumulator value.
     */
-   public BigInteger getAccumulator()
+   public byte[] getAccumulator()
    {
      return acc;
    }
@@ -133,7 +133,7 @@ import java.util.ArrayList;
     * Gets the list of witnesses.
     * @return the list of witnesses.
     */
-    public HashMap<String, BigInteger> getWitnesses()
+    public HashMap<String, byte[]> getWitnesses()
     {
       return witness;
     }
@@ -165,7 +165,7 @@ import java.util.ArrayList;
       ArrayList<byte[]> seq = new ArrayList<>();
       ArrayList<byte[]> subseq = new ArrayList<>();
 
-      seq.add(DerEncoder.encodeBigInteger(acc));
+      seq.add(DerEncoder.encodeOctets(acc));
       seq.add(DerEncoder.encodeString(policy));
       seq.add(DerEncoder.encodeOctets(signature));
 
@@ -180,7 +180,7 @@ import java.util.ArrayList;
          pt[1] = pt[1].substring(0, pt[1].length() - 1).strip();
          record.add(DerEncoder.encodeBigInteger(new BigInteger(pt[0])));
          record.add(DerEncoder.encodeBigInteger(new BigInteger(pt[1])));
-         record.add(DerEncoder.encodeBigInteger(witness.get(key)));
+         record.add(DerEncoder.encodeOctets(witness.get(key)));
          subseq.add(DerEncoder.encodeSequence(record));
       }
       seq.add(DerEncoder.encodeSequence(subseq));
