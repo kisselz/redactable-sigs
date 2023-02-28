@@ -4,7 +4,7 @@ Overview
 This project iplements redactable signature schemes for sets. Redactable signature schemes were
 first described by [Johsnson, Molnar, Song, and Wagner](https://people.eecs.berkeley.edu/~dawnsong/papers/homsig.pdf)
 and [Steinfeld, Bull, and Zheng](https://cpb-us-w2.wpmucdn.com/sites.uab.edu/dist/a/68/files/2020/01/cesproc-icisc01-p285.pdf).
-The provided code implements the set constructions in the accompanying paper "Policy-Based Redactable Set Signatures".
+The provided code implements the set constructions in the accompanying paper ["Policy-Based Redactable Signatures"](https://eprint.iacr.org/2022/1485).
 
 A good survey of the work up to 2015 is [A General Framework for Redactable Signatures and New Constructions](https://eprint.iacr.org/2015/1059.pdf)
 by Derler, P&ouml;hls, Samelin, and Slamanig
