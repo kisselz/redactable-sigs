@@ -15,8 +15,31 @@
     <mkdir dir="${api}"/>
   </target>
 
+  <!-- Setup the repo for building. -->
+  <target name="setup.check" description="Determine if we should run setup.">
+   <condition property="setup.run">
+          <available file="lib" type="dir"/>
+    </condition>
+  </target>
+
+  <target name="setup" description="Download the necessary libraries." depends="setup.check" unless="setup.run">
+    <mkdir dir="lib"/>
+    <get src="https://download.sourceforge.net/jpbc/jpbc-2.0.0.zip" dest="lib/jpbc2.zip"/>
+    <unzip src="lib/jpbc2.zip" dest="lib/" overwrite="true">
+    <patternset>
+        <include name="jars/jpbc-plaf-2.0.0.jar"/>
+        <include name="jars/jpbc-api-2.0.0.jar"/>
+    </patternset>
+    <mapper>
+        <globmapper from="jars/jpbc-plaf-2.0.0.jar" to="jpbc-plaf.jar"/>
+        <globmapper from="jars/jpbc-api-2.0.0.jar" to="jpbc-api.jar"/>
+    </mapper>
+    </unzip>
+    <delete file="lib/jpbc2.zip"/>
+  </target>
+
   <!-- Compile the Java code from ${src} into ${build} -->
-  <target name="compile" depends="init"
+  <target name="compile" depends="init, setup"
         description="Compile source code">
     <javac debug="true" debuglevel="source,lines,vars" includeantruntime="false"
       srcdir="${src}" destdir="${build}" classpath="lib/jpbc-api.jar;lib/jpbc-plaf.jar">
